@@ -1,0 +1,59 @@
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Local databases and runtime state
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/storage/
+storage/
+.runtime/
+runtime/
+
+# Uploaded/generated runtime files
+uploads/
+reports/
+logs/
+*.log
+
+# Build/distribution outputs
+dist/
+build/
+*.egg-info/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local tool output
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local agent/autopilot state
+docs/progress/*.json
+docs/progress/file_snapshots/
