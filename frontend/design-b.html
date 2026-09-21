@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Platform - Command Workspace</title>
+  <style>
+    :root {
+      --bg:#f6f5f2;
+      --ink:#15171c;
+      --muted:#6d7280;
+      --faint:#a2a8b4;
+      --panel:#ffffff;
+      --line:#dfddd6;
+      --black:#141414;
+      --teal:#0f9f83;
+      --blue:#335cff;
+      --shadow:0 18px 60px rgba(15,18,24,.10);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      color:var(--ink);
+      background:var(--bg);
+    }
+    .app {
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:76px 300px 1fr 300px;
+    }
+    .rail {
+      background:#151515;
+      padding:14px 10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+    .logo { width:40px; height:40px; border-radius:12px; background:#fff; }
+    .rail button {
+      width:44px; height:44px; border:0; border-radius:12px;
+      background:rgba(255,255,255,.08); color:#fff; font-size:18px; cursor:pointer;
+    }
+    .rail button.active { background:#fff; color:#111; }
+    .left {
+      border-right:1px solid var(--line);
+      background:rgba(255,255,255,.70);
+      padding:18px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .label { font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:.09em; }
+    .left h2 { margin:0; font-size:18px; }
+    .new { height:42px; border:0; border-radius:10px; background:var(--black); color:#fff; font-weight:700; cursor:pointer; }
+    .project {
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:10px;
+      padding:12px;
+      display:grid;
+      gap:6px;
+      cursor:pointer;
+    }
+    .project.active { border-color:#111; box-shadow:0 0 0 1px #111 inset; }
+    .meta { color:var(--muted); font-size:12px; }
+    .mini-card {
+      margin-top:auto;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+    .bar { height:8px; background:#ecebe6; border-radius:999px; overflow:hidden; }
+    .bar span { display:block; height:100%; width:42%; background:var(--teal); }
+    main {
+      min-width:0;
+      display:grid;
+      grid-template-rows:68px 1fr auto;
+    }
+    header {
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 26px;
+      background:rgba(246,245,242,.82);
+      backdrop-filter: blur(18px);
+    }
+    .title strong { display:block; font-size:15px; }
+    .title span { font-size:12px; color:var(--muted); }
+    .toolbar { display:flex; align-items:center; gap:10px; }
+    .btn, select {
+      height:38px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+      padding:0 12px;
+      color:var(--ink);
+      font:inherit;
+    }
+    .work {
+      padding:34px;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:24px;
+    }
+    .hero {
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:14px;
+      padding:24px;
+      box-shadow:var(--shadow);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:24px;
+    }
+    .hero h1 { margin:0 0 8px; font-size:30px; }
+    .hero p { margin:0; color:var(--muted); line-height:1.5; max-width:580px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+    .chip { border:1px solid var(--line); border-radius:999px; padding:7px 10px; color:#3b414c; font-size:13px; background:#fafafa; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; min-width:300px; }
+    .stat { background:#f7f7f4; border:1px solid var(--line); border-radius:10px; padding:12px; }
+    .stat strong { display:block; font-size:20px; margin-bottom:4px; }
+    .chat {
+      display:grid;
+      align-content:end;
+      min-height:0;
+    }
+    .composer {
+      width:min(920px,100%);
+      margin:0 auto;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    textarea { width:100%; min-height:84px; border:0; outline:0; resize:none; font:inherit; font-size:16px; }
+    .composer-actions { display:flex; justify-content:space-between; align-items:center; }
+    .tools-left { display:flex; gap:8px; }
+    .round { width:38px; height:38px; border-radius:11px; border:1px solid var(--line); background:#fff; }
+    .send { background:#111; color:#fff; border-color:#111; }
+    .right {
+      border-left:1px solid var(--line);
+      background:rgba(255,255,255,.70);
+      padding:18px 14px;
+      display:grid;
+      align-content:start;
+      gap:14px;
+    }
+    .panel { border:1px solid var(--line); background:#fff; border-radius:12px; padding:14px; display:grid; gap:10px; }
+    .file { display:flex; align-items:center; gap:10px; padding:9px; border:1px solid var(--line); border-radius:9px; }
+    .file-icon { width:30px; height:30px; border-radius:8px; background:#eff6f4; color:#08745e; display:grid; place-items:center; font-weight:800; font-size:11px; }
+    .login {
+      background:#111;
+      color:#fff;
+      border-radius:12px;
+      padding:14px;
+      display:grid;
+      gap:10px;
+    }
+    .login input { height:38px; border:0; border-radius:9px; padding:0 10px; }
+    .login button { height:38px; border:0; border-radius:9px; background:#fff; color:#111; font-weight:700; }
+    @media (max-width:1100px) {
+      .app { grid-template-columns:72px 280px 1fr; }
+      .right { display:none; }
+      .hero { display:block; }
+      .stats { margin-top:18px; min-width:0; }
+    }
+    @media (max-width:760px) {
+      .app { grid-template-columns:1fr; }
+      .rail,.left,.right { display:none; }
+      .work { padding:18px; }
+      .stats { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <nav class="rail">
+      <div class="logo"></div>
+      <button class="active">⌘</button>
+      <button>◫</button>
+      <button>◎</button>
+      <button>?</button>
+    </nav>
+    <aside class="left">
+      <div><div class="label">Рабочее пространство</div><h2>AI Platform</h2></div>
+      <button class="new">+ Новый чат</button>
+      <div class="label">Проекты</div>
+      <div class="project active"><strong>Продажи и запуск</strong><span class="meta">12 файлов · 4 чата</span></div>
+      <div class="project"><strong>Контент-план</strong><span class="meta">3 файла · 2 чата</span></div>
+      <div class="project"><strong>Личный чат</strong><span class="meta">Без проекта</span></div>
+      <div class="mini-card"><div style="display:flex;justify-content:space-between"><strong>Старт</strong><span class="meta">490 ₽</span></div><div class="bar"><span></span></div><div class="meta">214k из 500k токенов</div><button class="btn">Управлять тарифом</button></div>
+    </aside>
+    <main>
+      <header>
+        <div class="title"><strong>Продажи и запуск</strong><span>Claude Haiku · контекст проекта включен</span></div>
+        <div class="toolbar"><button class="btn">Docs</button><select><option>Claude Haiku 4.5</option><option>GPT-5.4</option><option>Gemini Pro</option></select><button class="btn">Войти</button></div>
+      </header>
+      <section class="work">
+        <div class="hero">
+          <div>
+            <h1>Рабочая сессия с AI</h1>
+            <p>Пишите в чат, подключайте файлы проекта, просматривайте изменения перед применением и контролируйте расход токенов.</p>
+            <div class="chips"><span class="chip">Поиск по файлам</span><span class="chip">Preview изменений</span><span class="chip">YooKassa billing</span><span class="chip">Русский интерфейс</span></div>
+          </div>
+          <div class="stats"><div class="stat"><strong>4</strong><span class="meta">активных чата</span></div><div class="stat"><strong>12</strong><span class="meta">файлов проекта</span></div><div class="stat"><strong>58%</strong><span class="meta">токенов осталось</span></div></div>
+        </div>
+        <div class="chat">
+          <div class="composer">
+            <textarea placeholder="Попросите модель проанализировать файл, написать текст или подготовить правки..."></textarea>
+            <div class="composer-actions"><div class="tools-left"><button class="round">+</button><button class="round">⌕</button><button class="round">🎙</button></div><button class="round send">↑</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <aside class="right">
+      <div class="login"><strong>Вход в аккаунт</strong><span style="color:#d6d6d6;font-size:13px">Email сохраняет историю, проекты и оплату.</span><input placeholder="email@example.com"><button>Войти или создать</button></div>
+      <div class="panel"><div class="label">Файлы проекта</div><div class="file"><div class="file-icon">PDF</div><div><strong>offer.pdf</strong><div class="meta">готов к поиску</div></div></div><div class="file"><div class="file-icon">DOC</div><div><strong>vision.docx</strong><div class="meta">индексируется</div></div></div></div>
+      <div class="panel"><div class="label">AI правки</div><div class="meta">2 предложения ждут подтверждения</div><button class="btn">Открыть diff</button></div>
+    </aside>
+  </div>
+</body>
+</html>

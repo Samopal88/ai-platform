@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Chat - Premium Quiet</title>
+  <style>
+    :root {
+      --bg: #f7f7f4;
+      --panel: #ffffff;
+      --panel-soft: #f0f1ed;
+      --text: #161616;
+      --muted: #6f7582;
+      --faint: #9aa1ad;
+      --border: #dedfd9;
+      --accent: #111111;
+      --green: #12a37f;
+      --shadow: 0 24px 80px rgba(20, 24, 32, .10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      display: grid;
+      grid-template-columns: 292px 1fr;
+      transition: grid-template-columns .22s ease;
+    }
+    body.sidebar-collapsed {
+      grid-template-columns: 0 1fr;
+    }
+    aside {
+      background: rgba(255,255,255,.78);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: hidden;
+      transition: transform .22s ease, opacity .22s ease;
+      z-index: 20;
+    }
+    body.sidebar-collapsed aside {
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-toggle {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 40;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 34px rgba(20,24,32,.08);
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text);
+    }
+    body:not(.sidebar-collapsed) .sidebar-toggle {
+      left: 306px;
+    }
+    .brand { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .mark { width:34px; height:34px; border-radius:10px; background:#111; }
+    .brand strong { font-size:15px; }
+    .account { font-size:12px; color:var(--muted); }
+    button, select { font: inherit; }
+    .primary {
+      width:100%;
+      border:0;
+      border-radius:10px;
+      background:#151515;
+      color:#fff;
+      height:42px;
+      font-weight:650;
+      cursor:pointer;
+    }
+    .secondary {
+      border:1px solid var(--border);
+      background:var(--panel);
+      color:var(--text);
+      border-radius:10px;
+      height:38px;
+      padding:0 12px;
+      cursor:pointer;
+    }
+    .row { display:flex; gap:8px; }
+    .section-label {
+      font-size:11px;
+      color:var(--faint);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      padding: 0 6px;
+      margin-bottom:8px;
+    }
+    .nav-item {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      min-height:38px;
+      border-radius:9px;
+      padding:0 10px;
+      color:#343946;
+      font-size:13px;
+    }
+    .nav-item.active { background:var(--panel-soft); font-weight:650; }
+    .pill { font-size:11px; color:var(--muted); background:#eceee9; border-radius:999px; padding:2px 7px; }
+    .spacer { flex:1; }
+    .usage {
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:var(--panel);
+      padding:12px;
+      display:grid;
+      gap:10px;
+      box-shadow: 0 8px 28px rgba(16,20,28,.04);
+    }
+    .usage-top { display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+    .bar { height:7px; border-radius:999px; background:#eceee9; overflow:hidden; }
+    .bar span { display:block; width:28%; height:100%; background:var(--green); border-radius:inherit; }
+    .sync { border-top:1px solid var(--border); padding-top:14px; display:grid; gap:8px; }
+    .sync input { height:36px; border:1px solid var(--border); border-radius:9px; padding:0 10px; background:#fff; }
+    main { min-width:0; display:grid; grid-template-rows:1fr auto; position:relative; }
+    header {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      z-index: 30;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap: 10px;
+      background: transparent;
+    }
+    .crumb { display:none; }
+    .crumb { font-size:13px; color:var(--muted); }
+    .tools { display:flex; gap:10px; align-items:center; }
+    select { height:38px; border:1px solid var(--border); border-radius:10px; padding:0 12px; background:#fff; }
+    .canvas {
+      display:grid;
+      place-items:center;
+      padding:40px 24px;
+    }
+    .center {
+      width:min(860px, 100%);
+      display:grid;
+      gap:22px;
+      transform: translateY(-4vh);
+    }
+    .headline { text-align:center; display:grid; gap:8px; }
+    h1 { margin:0; font-size:32px; letter-spacing:0; }
+    .headline p { margin:0; color:var(--muted); }
+    .quick {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+    .quick button {
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      padding:14px;
+      text-align:left;
+      min-height:76px;
+      color:#323744;
+      cursor:pointer;
+    }
+    .composer {
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    textarea {
+      width:100%;
+      min-height:92px;
+      resize:none;
+      border:0;
+      outline:0;
+      font:inherit;
+      font-size:16px;
+      color:var(--text);
+    }
+    .composer-bottom { display:flex; justify-content:space-between; align-items:center; }
+    .icon {
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+    }
+    .send { background:#111; color:#fff; border-color:#111; }
+    footer { text-align:center; color:var(--faint); font-size:12px; padding:0 0 18px; }
+    @media (max-width: 900px) {
+      body, body.sidebar-collapsed { grid-template-columns:1fr; }
+      aside {
+        position:fixed;
+        inset:0 auto 0 0;
+        width:292px;
+        box-shadow: 20px 0 70px rgba(20,24,32,.18);
+      }
+      body.sidebar-collapsed aside {
+        transform: translateX(-105%);
+      }
+      body:not(.sidebar-collapsed) .sidebar-toggle { left: 306px; }
+      .quick { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Открыть или закрыть панель">☰</button>
+  <aside>
+    <div class="brand">
+      <div style="display:flex;align-items:center;gap:10px"><div class="mark"></div><strong>AI Chat</strong></div>
+      <span class="account">Гость</span>
+    </div>
+    <button class="primary">+ Новый чат</button>
+    <div class="row"><button class="secondary" style="flex:1">+ Проект</button><button class="secondary">↻</button></div>
+    <section><div class="section-label">Проекты</div><div class="nav-item active">Личный чат <span class="pill">now</span></div><div class="nav-item">Документы запуска <span class="pill">4</span></div></section>
+    <section><div class="section-label">История</div><div class="nav-item">Как подготовить оффер</div><div class="nav-item">Файлы проекта</div><div class="nav-item">Идеи для лендинга</div></section>
+    <div class="spacer"></div>
+    <div class="usage"><div class="usage-top"><strong>Free</strong><span>14 200 / 50 000</span></div><div class="bar"><span></span></div><button class="secondary">Тарифы</button></div>
+    <div class="sync"><div class="section-label" style="padding:0">Вход</div><input placeholder="Email или код устройства"><button class="secondary">Войти</button></div>
+  </aside>
+  <main>
+    <header>
+      <div class="crumb">Личный чат</div>
+      <div class="tools"><button class="secondary">Docs</button><select><option>Claude Haiku</option><option>GPT-5.4</option></select><button class="secondary">Войти</button></div>
+    </header>
+    <div class="canvas">
+      <div class="center">
+        <div class="headline"><h1>Чем займёмся?</h1><p>Чат, проекты, файлы и модели в одном спокойном рабочем пространстве.</p></div>
+        <div class="quick"><button><strong>Создать проект</strong><br>Собрать файлы и контекст</button><button><strong>Разобрать документ</strong><br>Загрузить PDF, DOCX или таблицу</button><button><strong>Написать промпт</strong><br>Получить готовый результат</button></div>
+        <div class="composer"><textarea placeholder="Напишите сообщение..."></textarea><div class="composer-bottom"><button class="icon">+</button><button class="icon send">↑</button></div></div>
+      </div>
+    </div>
+    <footer>Ответы ИИ могут быть неточными</footer>
+  </main>
+  <script>
+    const toggle = document.getElementById('sidebarToggle');
+    toggle.addEventListener('click', () => {
+      document.body.classList.toggle('sidebar-collapsed');
+      toggle.textContent = document.body.classList.contains('sidebar-collapsed') ? '☰' : '‹';
+    });
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      document.body.classList.add('sidebar-collapsed');
+      toggle.textContent = '☰';
+    } else {
+      toggle.textContent = '‹';
+    }
+  </script>
+</body>
+</html>

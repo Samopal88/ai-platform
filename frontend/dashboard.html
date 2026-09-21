@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workspace Dashboard</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #0f3460;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #4e9fff;
+            --accent-green: #4caf50;
+            --accent-orange: #ff9800;
+            --accent-red: #f44336;
+            --accent-purple: #9c27b0;
+            --border-color: #2a3f5f;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mode-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .mode-badge.self, .mode-badge.chatgpt_self {
+            background: var(--accent-green);
+            color: white;
+        }
+        .mode-badge.claude, .mode-badge.claude_fallback {
+            background: var(--accent-orange);
+            color: white;
+        }
+        .mode-badge.hybrid {
+            background: var(--accent-purple);
+            color: white;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.active {
+            background: var(--accent-green);
+        }
+        .status-dot.paused {
+            background: var(--accent-orange);
+            animation: none;
+        }
+        .status-dot.error {
+            background: var(--accent-red);
+        }
+        .status-dot.queued {
+            background: var(--accent-purple);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .card-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .card-value.small {
+            font-size: 14px;
+        }
+        .card-content {
+            color: var(--text-primary);
+        }
+
+        /* Job ID display */
+        .job-id-display {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            background: var(--bg-secondary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--accent-blue);
+        }
+
+        /* Job status badge */
+        .job-status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .job-status-badge.queued {
+            background: rgba(156, 39, 176, 0.2);
+            color: var(--accent-purple);
+        }
+        .job-status-badge.started, .job-status-badge.in_progress {
+            background: rgba(78, 159, 255, 0.2);
+            color: var(--accent-blue);
+        }
+        .job-status-badge.finished {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .job-status-badge.failed {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--accent-red);
+        }
+        .job-status-badge.cancelled {
+            background: rgba(158, 158, 158, 0.2);
+            color: var(--text-secondary);
+        }
+
+        /* Queue stats */
+        .queue-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .queue-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .queue-stat-value {
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .queue-stat-label {
+            color: var(--text-secondary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-pause {
+            background: var(--accent-orange);
+            color: white;
+        }
+        .btn-approve {
+            background: var(--accent-green);
+            color: white;
+        }
+        .btn-reject {
+            background: var(--accent-red);
+            color: white;
+        }
+        .btn-resume {
+            background: var(--accent-blue);
+            color: white;
+        }
+        .btn-cancel {
+            background: var(--accent-red);
+            color: white;
+        }
+        .btn-new-task {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        /* Task input */
+        .task-input-area {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .task-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .task-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-path {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .file-action {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .file-action.created {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .file-action.modified {
+            background: rgba(78, 159, 255, 0.2);
+            color: var(--accent-blue);
+        }
+        .file-action.deleted {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--accent-red);
+        }
+        .progress-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .progress-item:hover {
+            background: rgba(78, 159, 255, 0.1);
+        }
+        .progress-item.active {
+            border-left: 3px solid var(--accent-blue);
+        }
+        .progress-icon {
+            font-size: 16px;
+        }
+        .progress-name {
+            flex: 1;
+            font-size: 13px;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Progress log - enhanced */
+        .progress-log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        .progress-entry {
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .progress-entry:last-child {
+            border-bottom: none;
+        }
+        .progress-time {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            font-size: 11px;
+        }
+        .progress-stage {
+            color: var(--accent-blue);
+            font-weight: 500;
+            flex-shrink: 0;
+            min-width: 100px;
+        }
+        .progress-message {
+            flex: 1;
+        }
+        .progress-entry.error {
+            color: var(--accent-red);
+            background: rgba(244, 67, 54, 0.1);
+        }
+        .progress-entry.error .progress-stage {
+            color: var(--accent-red);
+        }
+        .progress-entry.warning {
+            color: var(--accent-orange);
+            background: rgba(255, 152, 0, 0.1);
+        }
+        .progress-entry.warning .progress-stage {
+            color: var(--accent-orange);
+        }
+
+        /* Answer display */
+        .answer-display {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-green);
+        }
+        .error-display {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .markdown-content {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.8;
+        }
+        .markdown-content h1 {
+            font-size: 24px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .markdown-content h2 {
+            font-size: 20px;
+            color: var(--accent-blue);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        .markdown-content h3 {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+        .markdown-content p {
+            margin-bottom: 12px;
+        }
+        .markdown-content ul, .markdown-content ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+        .markdown-content li {
+            margin: 6px 0;
+        }
+        .markdown-content code {
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+        }
+        .markdown-content pre {
+            background: #0d1117;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 20px 0;
+        }
+        .markdown-content strong {
+            color: var(--accent-blue);
+        }
+        .markdown-content a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+        .task-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .task-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .task-status.in_progress {
+            background: rgba(78, 159, 255, 0.2);
+            color: var(--accent-blue);
+        }
+        .task-status.completed {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .task-status.failed {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--accent-red);
+        }
+        .task-status.paused {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--accent-orange);
+        }
+        .task-description {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .task-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .refresh-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Job history */
+        .job-history {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .job-history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .job-history-item:hover {
+            background: var(--bg-secondary);
+        }
+        .job-history-item:last-child {
+            border-bottom: none;
+        }
+        .job-history-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--accent-blue);
+        }
+        .job-history-type {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Review loop visibility */
+        .review-loop-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(78, 159, 255, 0.1);
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        .review-loop-indicator.retrying, .review-loop-indicator.self_fixing {
+            background: rgba(255, 152, 0, 0.1);
+            color: var(--accent-orange);
+        }
+        .review-loop-indicator.reviewing, .review-loop-indicator.self_review {
+            background: rgba(78, 159, 255, 0.1);
+            color: var(--accent-blue);
+        }
+        .review-loop-indicator.blocked {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--accent-red);
+        }
+        .review-loop-indicator.claude_fallback {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--accent-orange);
+            border: 1px solid var(--accent-orange);
+        }
+        .review-loop-indicator.chatgpt_self {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--accent-green);
+        }
+
+        /* Claude fallback reason */
+        .claude-reason {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid var(--accent-orange);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--accent-orange);
+        }
+
+        /* Definition of Done status */
+        .dod-status {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .dod-status .dod-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .dod-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+        .dod-item.passed {
+            color: var(--accent-green);
+        }
+        .dod-item.failed {
+            color: var(--accent-red);
+        }
+        .dod-item.pending {
+            color: var(--text-secondary);
+        }
+        .dod-icon {
+            width: 16px;
+            text-align: center;
+        }
+
+        .mgr-refresh-indicator {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+        }
+        .mgr-refresh-indicator.live {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            background: rgba(76, 175, 80, 0.12);
+        }
+        .mgr-refresh-indicator.updating {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            background: rgba(78, 159, 255, 0.14);
+        }
+        .mgr-refresh-indicator.offline {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            background: rgba(244, 67, 54, 0.12);
+        }
+        .mgr-last-updated {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .mgr-last-updated.warning {
+            color: var(--accent-orange);
+        }
+        .mgr-poll-error {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--accent-red);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">AI Workspace Dashboard</div>
+            <div class="header-info">
+                <div id="currentJobId" style="display: none;">
+                    Job: <span class="job-id-display" id="jobIdValue">-</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot active" id="statusDot"></div>
+                    <span id="statusText">Active</span>
+                </div>
+                <div class="mode-badge claude" id="modeBadge">claude</div>
+            </div>
+        </header>
+
+        <!-- Quick Stats -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Current Stage</span>
+                    <button class="refresh-btn" onclick="refreshAll()">Refresh</button>
+                </div>
+                <div class="card-value" id="currentStage">Loading...</div>
+                <div class="card-subtitle" id="stageInfo" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Job Status</span>
+                    <span class="job-status-badge queued" id="jobStatusBadge">-</span>
+                </div>
+                <div class="card-value small" id="taskStatus">Loading...</div>
+                <div id="retryInfo" style="font-size: 12px; color: var(--accent-orange); margin-top: 8px; display: none;"></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Queue</span>
+                </div>
+                <div class="queue-stats" id="queueStats">
+                    <div class="queue-stat">
+                        <span class="queue-stat-value" id="queuedCount">0</span>
+                        <span class="queue-stat-label">queued</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="queue-stat-value" id="runningCount">0</span>
+                        <span class="queue-stat-label">running</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="queue-stat-value" id="finishedCount">0</span>
+                        <span class="queue-stat-label">done</span>
+                    </div>
+                    <div class="queue-stat">
+                        <span class="queue-stat-value" id="blockedCount" style="color: var(--accent-red);">0</span>
+                        <span class="queue-stat-label">blocked</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Controls</span>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-pause" id="btnPause" onclick="controlAction('pause')">
+                        Pause
+                    </button>
+                    <button class="btn btn-resume" id="btnResume" onclick="controlAction('resume')" style="display: none;">
+                        Resume
+                    </button>
+                    <button class="btn btn-approve" onclick="controlAction('approve')">
+                        Approve
+                    </button>
+                    <button class="btn btn-reject" onclick="controlAction('reject')">
+                        Reject
+                    </button>
+                    <button class="btn btn-cancel" id="btnCancel" onclick="cancelCurrentJob()" style="display: none;">
+                        Cancel Job
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Autonomous Runner Status (NEW) -->
+        <div class="card" style="margin-bottom: 20px; border: 2px solid var(--accent-purple);">
+            <div class="card-header">
+                <span class="card-title" style="color: var(--accent-purple);">🚀 Autonomous Build Runner</span>
+                <span class="job-status-badge" id="runnerBadge">idle</span>
+            </div>
+            <div id="runnerStatusContent">
+                <div style="font-size: 13px;">
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+                        <div>Mode: <span id="runnerMode" class="mode-badge self_first">self_first</span></div>
+                        <div>Status: <span id="runnerStatus" style="font-weight: 600;">idle</span></div>
+                        <div>Step: <span id="runnerStep" style="font-weight: 600; color: var(--accent-blue);">-</span></div>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <div>Current Task: <span id="runnerTask" style="font-style: italic;">-</span></div>
+                        <div>Progress: <span id="runnerProgress">0/0</span> steps</div>
+                        <div>Attempts: <span id="runnerAttempts">0</span></div>
+                    </div>
+                    <div id="runnerClaudeInfo" style="display: none; margin-top: 8px; padding: 8px; background: rgba(255, 152, 0, 0.1); border-radius: 4px;">
+                        <span style="color: var(--accent-orange);">⚡ Claude Fallback Active</span>
+                        <div id="runnerClaudeReason" style="font-size: 11px; margin-top: 4px;"></div>
+                    </div>
+                </div>
+                <!-- Progress Events Stream -->
+                <div id="runnerEvents" style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: var(--bg-secondary); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px;">
+                    <div style="color: var(--text-secondary);">Waiting for events...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loop & Supervisor & Orchestrator Status -->
+        <div class="grid" style="margin-bottom: 20px;">
+            <div class="card" id="orchestratorStatusCard">
+                <div class="card-header">
+                    <span class="card-title">ChatGPT-First Orchestrator</span>
+                    <span class="job-status-badge" id="orchestratorBadge">idle</span>
+                </div>
+                <div id="orchestratorStatusContent">
+                    <div style="font-size: 13px;">
+                        <div>Mode: <span id="orchestratorMode" class="mode-badge chatgpt_self">chatgpt_self</span></div>
+                        <div>Status: <span id="orchestratorStatus">idle</span></div>
+                        <div>Step: <span id="orchestratorStep">-</span></div>
+                        <div>Attempts: <span id="orchestratorAttempts">0</span>/<span id="orchestratorMaxAttempts">2</span></div>
+                        <div>Task: <span id="orchestratorTask">-</span></div>
+                        <div id="orchestratorReview" style="color: var(--accent-blue); display: none;">Self-review in progress...</div>
+                        <div id="claudeInvoked" style="display: none; margin-top: 8px;">
+                            <span style="color: var(--accent-orange);">Claude invoked as fallback</span>
+                            <div id="claudeReason" class="claude-reason" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="loopStatusCard">
+                <div class="card-header">
+                    <span class="card-title">Autonomous Loop</span>
+                    <span class="job-status-badge" id="loopStatusBadge">idle</span>
+                </div>
+                <div id="loopStatusContent">
+                    <div style="font-size: 13px;">
+                        <div>Step: <span id="loopStep">-</span></div>
+                        <div>Iteration: <span id="loopIteration">0</span></div>
+                        <div>Task: <span id="loopTask">-</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="supervisorStatusCard">
+                <div class="card-header">
+                    <span class="card-title">Supervisor</span>
+                    <span class="job-status-badge" id="supervisorStatusBadge">idle</span>
+                </div>
+                <div id="supervisorStatusContent">
+                    <div style="font-size: 13px;">
+                        <div>Active Task: <span id="supervisorTask">-</span></div>
+                        <div>Attempts: <span id="supervisorAttempts">0</span></div>
+                        <div>Blocked: <span id="supervisorBlocked" style="color: var(--accent-red);">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Task Input - Autonomous Mode -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <span class="card-title">Start New Task</span>
+                <label style="font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="autonomousMode" checked>
+                    Autonomous Mode
+                </label>
+            </div>
+            <div class="task-input-area">
+                <input type="text" id="taskInput" class="task-input" placeholder="Enter task description..." onkeypress="if(event.key==='Enter')startNewTask()">
+                <button class="btn btn-new-task" onclick="startNewTask()">Start Task</button>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                <span id="modeInfo">🚀 Autonomous mode: Task will run to completion without pauses</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Progress Files</span>
+                    </div>
+                    <div class="progress-list" id="progressFiles">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Files Changed</span>
+                    </div>
+                    <div class="file-list" id="changedFiles">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Recent Jobs</span>
+                    </div>
+                    <div class="job-history" id="jobHistory">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Active Job Progress -->
+                <div class="card" id="activeJobCard" style="display: none;">
+                    <div class="card-header">
+                        <span class="card-title">Active Job Progress</span>
+                        <span class="job-id-display" id="activeJobId">-</span>
+                    </div>
+                    <div class="progress-log" id="progressLog">
+                        Ожидание событий...
+                    </div>
+                    <!-- Review loop indicator -->
+                    <div id="reviewLoopIndicator" class="review-loop-indicator" style="display: none;">
+                        <span id="reviewLoopIcon">🔄</span>
+                        <span id="reviewLoopText">Review in progress...</span>
+                    </div>
+                    <!-- Definition of Done status -->
+                    <div id="dodStatus" class="dod-status" style="display: none;">
+                        <div class="dod-title">Definition of Done</div>
+                        <div id="dodItems"></div>
+                    </div>
+                    <div id="jobAnswer" style="margin-top: 16px; display: none;">
+                        <div class="card-title" style="margin-bottom: 8px;">Answer</div>
+                        <div class="answer-display markdown-content" id="jobAnswerContent"></div>
+                    </div>
+                    <div id="jobError" style="margin-top: 16px; display: none;">
+                        <div class="card-title" style="margin-bottom: 8px;">Error</div>
+                        <div class="error-display" id="jobErrorContent"></div>
+                    </div>
+                </div>
+
+                <!-- Manager Operator Status -->
+                <div class="card" id="managerLoopCard" style="grid-column: 1 / -1;">
+                <div class="card-header">
+                    <span class="card-title">Manager Status</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span id="mgrModeBadge" style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg-secondary);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;">—</span>
+                        <span id="mgrRefreshIndicator" class="mgr-refresh-indicator updating">Updating...</span>
+                        <span id="mgrLastUpdated" class="mgr-last-updated">Last updated: --</span>
+                        <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="runManagerCycle()">▶ Run Cycle</button>
+                        <button class="btn" style="font-size:11px;padding:4px 10px;background:var(--accent-purple);color:white;" onclick="runManagerAuto()">⚡ Run Auto</button>
+                        <button class="btn" id="btnRunSprint" style="font-size:11px;padding:4px 10px;background:var(--accent-blue);color:white;" onclick="runManagerSprint()">🏁 Run Sprint</button>
+                        <button class="btn" style="font-size:11px;padding:4px 10px;background:var(--bg-secondary);" onclick="resetManager()">↺ Reset</button>
+                        <button class="btn" style="font-size:11px;padding:4px 10px;background:var(--bg-secondary);" onclick="refreshManagerState()" title="Refresh status">↻</button>
+                    </div>
+                </div>
+                <div id="mgrPollError" class="mgr-poll-error" style="display:none;">Не удалось обновить статус</div>
+                <div id="managerLoopBody" style="font-size:13px;">
+                    <div class="loading"><div class="spinner"></div>Loading manager status…</div>
+                </div>
+            </div>
+
+                <!-- Last Task -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Last Claude Task</span>
+                    </div>
+                    <div class="task-card" id="lastTask">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Content -->
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <span class="card-title" id="contentTitle">Current Status</span>
+                        <button class="refresh-btn" onclick="loadCurrentStatus()">Refresh</button>
+                    </div>
+                    <div class="markdown-content" id="statusContent">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading status...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API endpoints - direct to running backend (no /api prefix)
+        const PROJECT_PATH = '/opt/ai-workspace/storage/projects/ai-platform';
+
+        let currentJobId = null;
+        let pollInterval = null;
+        let dashboardRefreshInterval = null;
+
+        // Simple markdown to HTML converter
+        function renderMarkdown(text) {
+            if (!text) return '';
+
+            let html = text
+                // Escape HTML
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Code blocks
+            html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+            // Horizontal rule
+            html = html.replace(/^---$/gm, '<hr>');
+
+            // Lists with checkboxes
+            html = html.replace(/^- \[x\] (.+)$/gm, '<li>Done: $1</li>');
+            html = html.replace(/^- \[ \] (.+)$/gm, '<li>Todo: $1</li>');
+
+            // Regular lists
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+
+            // Wrap list items
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Paragraphs
+            html = html.split(/\n\n+/).map(para => {
+                para = para.trim();
+                if (!para) return '';
+                if (para.startsWith('<') && !para.startsWith('<li>')) return para;
+                if (para.startsWith('<li>')) return para;
+                return '<p>' + para.replace(/\n/g, '<br>') + '</p>';
+            }).join('');
+
+            return html;
+        }
+
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return null;
+            }
+        }
+
+        async function postAPI(endpoint, data = {}) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return null;
+            }
+        }
+
+        async function refreshStatus() {
+            try {
+                // Load status from local state files
+                const stateResp = await fetchAPI('/api/project-state?project_path=' + encodeURIComponent(PROJECT_PATH));
+                const loopState = await loadLocalJson('loop_state.json');
+                const orchestratorState = await loadLocalJson('orchestrator_state.json');
+                const supervisorState = await loadLocalJson('supervisor_state.json');
+                const progressState = await loadLocalJson('state.json');
+
+                // Use data from project-state API first, fallback to local files
+                const apiState = stateResp?.state || {};
+
+                // Combine data from multiple sources
+                const data = {
+                    stage: apiState.current_stage || progressState?.current_stage || 'Unknown',
+                    active_task: apiState.active_task || progressState?.active_task || orchestratorState?.current_task || loopState?.current_task,
+                    last_task: apiState.last_completed_task || progressState?.last_completed_task,
+                    mode: apiState.mode || progressState?.mode || 'self',
+                    is_paused: apiState.is_paused || progressState?.is_paused || false,
+                    has_error: apiState.has_error || progressState?.error || loopState?.error,
+                    blocked_count: apiState.blocked_count || (orchestratorState?.blocked_tasks?.length || 0) + (supervisorState?.blocked_tasks?.length || 0),
+                    loop_running: apiState.loop_running || loopState?.is_running || false,
+                    loop_step: apiState.loop_step || loopState?.current_step,
+                    loop_iteration: apiState.loop_iteration || loopState?.iteration || 0,
+                    retry_count: apiState.retry_count || loopState?.retry_count || orchestratorState?.attempts || 0
+                };
+
+                document.getElementById('currentStage').textContent = data.stage || 'Idle';
+                document.getElementById('taskStatus').textContent = data.active_task || data.last_task || 'No active task';
+
+                // Show additional stage info
+                const stageInfo = document.getElementById('stageInfo');
+                if (data.loop_running) {
+                    stageInfo.textContent = `Loop: ${data.loop_step} (iteration ${data.loop_iteration})`;
+                } else if (data.last_task) {
+                    stageInfo.textContent = `Last: ${data.last_task.substring(0, 50)}`;
+                } else {
+                    stageInfo.textContent = '';
+                }
+
+                // Show retry info if applicable
+                const retryInfo = document.getElementById('retryInfo');
+                if (data.retry_count > 0) {
+                    retryInfo.textContent = `Retry attempt ${data.retry_count}`;
+                    retryInfo.style.display = 'block';
+                } else {
+                    retryInfo.style.display = 'none';
+                }
+
+                // Update mode badge
+                const modeBadge = document.getElementById('modeBadge');
+                modeBadge.textContent = data.mode || 'self';
+                modeBadge.className = 'mode-badge ' + (data.mode || 'self');
+
+                // Update status indicator
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+
+                if (data.has_error) {
+                    statusDot.className = 'status-dot error';
+                    statusText.textContent = 'Error';
+                } else if (data.is_paused) {
+                    statusDot.className = 'status-dot paused';
+                    statusText.textContent = 'Paused';
+                    document.getElementById('btnPause').style.display = 'none';
+                    document.getElementById('btnResume').style.display = 'flex';
+                } else if (data.blocked_count > 0) {
+                    statusDot.className = 'status-dot error';
+                    statusText.textContent = 'Blocked';
+                } else if (data.loop_running) {
+                    statusDot.className = 'status-dot active';
+                    statusText.textContent = 'Loop Running';
+                } else {
+                    statusDot.className = 'status-dot active';
+                    statusText.textContent = 'Active';
+                    document.getElementById('btnPause').style.display = 'flex';
+                    document.getElementById('btnResume').style.display = 'none';
+                }
+
+                // Update blocked count
+                document.getElementById('blockedCount').textContent = data.blocked_count || 0;
+            } catch (e) {
+                console.error('refreshStatus error:', e);
+                document.getElementById('currentStage').textContent = 'Error loading';
+            }
+        }
+
+        async function loadLocalJson(filename) {
+            try {
+                const resp = await fetchAPI('/api/progress-file?path=' + encodeURIComponent(PROJECT_PATH + '/docs/progress/' + filename));
+                if (resp && resp.ok && resp.content) {
+                    return JSON.parse(resp.content);
+                }
+            } catch (e) {
+                console.error('Failed to load', filename, e);
+            }
+            return null;
+        }
+
+        async function refreshLoopStatus() {
+            const data = await loadLocalJson('loop_state.json');
+            if (data) {
+                const badge = document.getElementById('loopStatusBadge');
+                badge.textContent = data.is_running ? 'running' : 'idle';
+                badge.className = 'job-status-badge ' + (data.is_running ? 'started' : 'queued');
+
+                document.getElementById('loopStep').textContent = data.current_step || '-';
+                document.getElementById('loopIteration').textContent = data.iteration || 0;
+                document.getElementById('loopTask').textContent = data.current_task ? data.current_task.substring(0, 50) + '...' : '-';
+
+                if (data.blocked_reason) {
+                    document.getElementById('loopStatusCard').style.borderLeft = '3px solid var(--accent-red)';
+                } else if (data.is_running) {
+                    document.getElementById('loopStatusCard').style.borderLeft = '3px solid var(--accent-green)';
+                } else {
+                    document.getElementById('loopStatusCard').style.borderLeft = 'none';
+                }
+            }
+        }
+
+        async function refreshOrchestratorStatus() {
+            const data = await loadLocalJson('orchestrator_state.json');
+            if (data) {
+                const badge = document.getElementById('orchestratorBadge');
+                const status = data.status || 'idle';
+                const mode = data.mode || 'manager';
+                const step = data.current_step || 'idle';
+                badge.textContent = status;
+
+                // Set badge color based on status
+                if (status === 'blocked') {
+                    badge.className = 'job-status-badge failed';
+                } else if (status === 'planning' || status === 'step_executing' || status === 'step_reviewing') {
+                    badge.className = 'job-status-badge started';
+                } else if (status === 'running' || status === 'reviewing' || status === 'verifying' || status === 'self_fixing') {
+                    badge.className = 'job-status-badge started';
+                } else if (status === 'claude_fallback') {
+                    badge.className = 'job-status-badge in_progress';
+                } else if (status === 'completed') {
+                    badge.className = 'job-status-badge finished';
+                } else {
+                    badge.className = 'job-status-badge';
+                }
+
+                // Update mode badge - support manager mode
+                const modeEl = document.getElementById('orchestratorMode');
+                if (mode === 'manager') {
+                    modeEl.textContent = 'Manager';
+                    modeEl.className = 'mode-badge self';  // Green for manager
+                } else if (mode === 'claude_fallback') {
+                    modeEl.textContent = 'Claude Fallback';
+                    modeEl.className = 'mode-badge claude_fallback';
+                } else {
+                    modeEl.textContent = 'ChatGPT Self';
+                    modeEl.className = 'mode-badge chatgpt_self';
+                }
+
+                document.getElementById('orchestratorStatus').textContent = status;
+                document.getElementById('orchestratorStep').textContent = step;
+                document.getElementById('orchestratorAttempts').textContent = data.attempts || 0;
+                document.getElementById('orchestratorMaxAttempts').textContent = data.max_attempts || 2;
+                document.getElementById('orchestratorTask').textContent = data.current_task ? data.current_task.substring(0, 40) + '...' : '-';
+
+                // Update plan progress if available
+                if (data.plan && data.plan.steps) {
+                    displayPlanProgress(data.plan, data.current_step_index || 0);
+                }
+
+                // Restore active job if found and not already tracked
+                if (data.current_job_id && !currentJobId) {
+                    currentJobId = data.current_job_id;
+                    document.getElementById('currentJobId').style.display = 'block';
+                    document.getElementById('jobIdValue').textContent = currentJobId;
+                    document.getElementById('activeJobCard').style.display = 'block';
+                    document.getElementById('activeJobId').textContent = currentJobId;
+
+                    // Start polling
+                    if (status === 'running' || status === 'planning' ||
+                        status === 'step_executing' || status === 'step_reviewing') {
+                        startJobPolling();
+                    }
+                }
+
+                // Show review indicator with ChatGPT-first terminology
+                const reviewEl = document.getElementById('orchestratorReview');
+                if (step === 'self_review' || status === 'reviewing') {
+                    reviewEl.textContent = 'Self-review in progress...';
+                    reviewEl.style.display = 'block';
+                    reviewEl.style.color = 'var(--accent-blue)';
+                } else if (step === 'verify_dod' || status === 'verifying') {
+                    reviewEl.textContent = 'Verifying Definition of Done...';
+                    reviewEl.style.display = 'block';
+                    reviewEl.style.color = 'var(--accent-blue)';
+                } else if (step === 'self_fix' || status === 'self_fixing') {
+                    reviewEl.textContent = `Self-fixing (attempt ${data.attempts || 0})...`;
+                    reviewEl.style.display = 'block';
+                    reviewEl.style.color = 'var(--accent-orange)';
+                } else if (step === 'claude_fallback' || status === 'claude_fallback') {
+                    reviewEl.textContent = 'Claude fallback executing...';
+                    reviewEl.style.display = 'block';
+                    reviewEl.style.color = 'var(--accent-orange)';
+                } else {
+                    reviewEl.style.display = 'none';
+                }
+
+                // Show Claude invoked info
+                const claudeEl = document.getElementById('claudeInvoked');
+                const claudeReasonEl = document.getElementById('claudeReason');
+                if (data.claude_invoked) {
+                    claudeEl.style.display = 'block';
+                    if (data.claude_reason) {
+                        claudeReasonEl.textContent = data.claude_reason;
+                        claudeReasonEl.style.display = 'block';
+                    }
+                } else {
+                    claudeEl.style.display = 'none';
+                    claudeReasonEl.style.display = 'none';
+                }
+
+                // Card border color
+                const card = document.getElementById('orchestratorStatusCard');
+                if (status === 'blocked') {
+                    card.style.borderLeft = '3px solid var(--accent-red)';
+                } else if (mode === 'claude_fallback' || status === 'claude_fallback') {
+                    card.style.borderLeft = '3px solid var(--accent-orange)';
+                } else if (status === 'running' || status === 'reviewing' || status === 'verifying') {
+                    card.style.borderLeft = '3px solid var(--accent-green)';
+                } else if (status === 'self_fixing') {
+                    card.style.borderLeft = '3px solid var(--accent-orange)';
+                } else if (status === 'completed') {
+                    card.style.borderLeft = '3px solid var(--accent-blue)';
+                } else {
+                    card.style.borderLeft = 'none';
+                }
+            }
+        }
+
+        async function refreshSupervisorStatus() {
+            const data = await loadLocalJson('supervisor_state.json');
+            if (data) {
+                const badge = document.getElementById('supervisorStatusBadge');
+                badge.textContent = data.active_task ? 'active' : 'idle';
+                badge.className = 'job-status-badge ' + (data.active_task ? 'started' : 'queued');
+
+                document.getElementById('supervisorTask').textContent = data.active_task ? data.active_task.substring(0, 30) + '...' : '-';
+                document.getElementById('supervisorAttempts').textContent = data.attempts || 0;
+                document.getElementById('supervisorBlocked').textContent = (data.blocked_tasks || []).length;
+
+                if ((data.blocked_tasks || []).length > 0) {
+                    document.getElementById('supervisorStatusCard').style.borderLeft = '3px solid var(--accent-red)';
+                } else if (data.active_task) {
+                    document.getElementById('supervisorStatusCard').style.borderLeft = '3px solid var(--accent-blue)';
+                } else {
+                    document.getElementById('supervisorStatusCard').style.borderLeft = 'none';
+                }
+            }
+        }
+
+        async function refreshQueueStatus() {
+            // Queue stats via Redis RQ - try to get from job history
+            // Since main backend doesn't have /queue-status, we set defaults
+            // and rely on active job detection from polling
+            const data = {
+                queued_count: 0,
+                running_count: currentJobId ? 1 : 0,
+                finished_count: 0,
+                active_job: currentJobId ? { job_id: currentJobId, status: 'started' } : null
+            };
+
+            document.getElementById('queuedCount').textContent = data.queued_count;
+            document.getElementById('runningCount').textContent = data.running_count;
+            document.getElementById('finishedCount').textContent = data.finished_count;
+
+            // Update active job display
+            if (data.active_job) {
+                currentJobId = data.active_job.job_id;
+                document.getElementById('currentJobId').style.display = 'block';
+                document.getElementById('jobIdValue').textContent = currentJobId;
+                document.getElementById('btnCancel').style.display = 'flex';
+
+                // Update job status badge
+                const badge = document.getElementById('jobStatusBadge');
+                badge.textContent = data.active_job.status;
+                badge.className = 'job-status-badge ' + data.active_job.status;
+
+                // Start polling if not already
+                if (!pollInterval) {
+                    startJobPolling();
+                }
+            } else {
+                document.getElementById('currentJobId').style.display = 'none';
+                document.getElementById('btnCancel').style.display = 'none';
+                document.getElementById('jobStatusBadge').textContent = '-';
+                document.getElementById('jobStatusBadge').className = 'job-status-badge';
+                stopJobPolling();
+            }
+        }
+
+        async function loadJobStatus(jobId) {
+            const data = await fetchAPI('/api/job-status/' + jobId);
+            if (data) {
+                const card = document.getElementById('activeJobCard');
+                card.style.display = 'block';
+
+                document.getElementById('activeJobId').textContent = data.job_id;
+
+                // Update job status badge
+                const badge = document.getElementById('jobStatusBadge');
+                badge.textContent = data.status;
+                badge.className = 'job-status-badge ' + data.status;
+
+                // Update status dot based on job status
+                const statusDot = document.getElementById('statusDot');
+                if (data.status === 'finished') {
+                    statusDot.className = 'status-dot active';
+                } else if (data.status === 'failed') {
+                    statusDot.className = 'status-dot error';
+                } else if (data.status === 'queued') {
+                    statusDot.className = 'status-dot queued';
+                } else {
+                    statusDot.className = 'status-dot active';
+                }
+
+                // Progress log - enhanced with stage and level
+                const progressLog = document.getElementById('progressLog');
+                if (data.progress && data.progress.length > 0) {
+                    progressLog.innerHTML = data.progress.map(p => {
+                        const stage = p.stage || p.current_stage || 'info';
+                        return `
+                            <div class="progress-entry ${p.level || 'info'}">
+                                <span class="progress-time">${new Date(p.timestamp).toLocaleTimeString()}</span>
+                                <span class="progress-stage">[${stage}]</span>
+                                <span class="progress-message">${p.message}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    progressLog.scrollTop = progressLog.scrollHeight;
+
+                    // Update review loop indicator based on events
+                    updateReviewLoopIndicator(data.progress);
+
+                    // Update DoD status based on events
+                    updateDoDStatus(data.progress);
+                } else {
+                    progressLog.innerHTML = '<div class="progress-entry"><span class="progress-message">Waiting for progress events...</span></div>';
+                }
+
+                // Answer
+                const answerSection = document.getElementById('jobAnswer');
+                const answerContent = document.getElementById('jobAnswerContent');
+                if (data.answer) {
+                    answerSection.style.display = 'block';
+                    answerContent.innerHTML = renderMarkdown(data.answer);
+                } else {
+                    answerSection.style.display = 'none';
+                }
+
+                // Error
+                const errorSection = document.getElementById('jobError');
+                const errorContent = document.getElementById('jobErrorContent');
+                if (data.error) {
+                    errorSection.style.display = 'block';
+                    errorContent.textContent = data.error;
+                } else {
+                    errorSection.style.display = 'none';
+                }
+
+                // Files changed from job
+                if (data.files_changed && data.files_changed.length > 0) {
+                    // Could update files changed list here
+                }
+
+                // Stop polling if job is done
+                if (data.status === 'finished' || data.status === 'failed' || data.status === 'cancelled') {
+                    stopJobPolling();
+                }
+            }
+        }
+
+        function startJobPolling() {
+            if (pollInterval) return;
+            pollInterval = setInterval(() => {
+                if (currentJobId) {
+                    loadJobStatus(currentJobId);
+                }
+            }, 1500); // Poll every 1.5 seconds for more responsive updates
+        }
+
+        function stopJobPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        // Update review loop indicator based on progress events (ChatGPT-first)
+        function updateReviewLoopIndicator(events) {
+            const indicator = document.getElementById('reviewLoopIndicator');
+            const icon = document.getElementById('reviewLoopIcon');
+            const text = document.getElementById('reviewLoopText');
+
+            if (!events || events.length === 0) {
+                indicator.style.display = 'none';
+                return;
+            }
+
+            // Find the latest relevant event
+            const latestEvent = events[events.length - 1];
+            const stage = latestEvent.stage;
+
+            if (stage === 'self_review' || stage === 'reviewing') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator self_review';
+                icon.textContent = '🔍';
+                text.textContent = 'ChatGPT self-review...';
+            } else if (stage === 'self_fixing' || stage === 'self_fix') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator self_fixing';
+                icon.textContent = '🔄';
+                // Count self-fix attempts
+                const retryEvents = events.filter(e => e.stage === 'self_fixing' || e.stage === 'self_fix');
+                text.textContent = `ChatGPT self-fixing (attempt ${retryEvents.length})...`;
+            } else if (stage === 'claude_fallback') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator claude_fallback';
+                icon.textContent = '🔶';
+                text.textContent = 'Claude fallback executing...';
+            } else if (stage === 'blocked' || latestEvent.level === 'error') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator blocked';
+                icon.textContent = '⛔';
+                text.textContent = latestEvent.message;
+            } else if (stage === 'completed' || stage === 'complete') {
+                indicator.style.display = 'none';
+            } else if (stage === 'implement' || stage === 'chatgpt_running') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator chatgpt_self';
+                icon.textContent = '⚡';
+                text.textContent = 'ChatGPT executing...';
+            } else if (stage === 'verify_dod' || stage === 'verifying') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator reviewing';
+                icon.textContent = '✓';
+                text.textContent = 'Verifying Definition of Done...';
+            } else if (stage === 'claude_running') {
+                indicator.style.display = 'flex';
+                indicator.className = 'review-loop-indicator claude_fallback';
+                icon.textContent = '⚡';
+                text.textContent = 'Claude executing...';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Update Definition of Done status based on progress events
+        function updateDoDStatus(events) {
+            const dodStatus = document.getElementById('dodStatus');
+            const dodItems = document.getElementById('dodItems');
+
+            if (!events || events.length === 0) {
+                dodStatus.style.display = 'none';
+                return;
+            }
+
+            // Look for DoD-related events
+            const dodEvents = events.filter(e =>
+                e.stage === 'dod_check' ||
+                e.stage === 'verifying' ||
+                e.stage === 'verification_passed' ||
+                e.stage === 'verification_failed' ||
+                (e.extra && e.extra.dod)
+            );
+
+            if (dodEvents.length === 0) {
+                // Show default DoD items based on common checks
+                const lastEvent = events[events.length - 1];
+                const isCompleted = lastEvent.stage === 'completed';
+                const hasError = lastEvent.level === 'error';
+
+                if (isCompleted || hasError) {
+                    dodStatus.style.display = 'block';
+                    dodItems.innerHTML = `
+                        <div class="dod-item ${isCompleted ? 'passed' : 'pending'}">
+                            <span class="dod-icon">${isCompleted ? '✓' : '○'}</span>
+                            <span>Задача выполнена</span>
+                        </div>
+                        <div class="dod-item ${!hasError ? 'passed' : 'failed'}">
+                            <span class="dod-icon">${!hasError ? '✓' : '✗'}</span>
+                            <span>Без ошибок</span>
+                        </div>
+                    `;
+                } else {
+                    dodStatus.style.display = 'none';
+                }
+                return;
+            }
+
+            dodStatus.style.display = 'block';
+            dodItems.innerHTML = dodEvents.map(e => {
+                const isPassed = e.stage === 'verification_passed' || (e.extra && e.extra.passed);
+                const isFailed = e.stage === 'verification_failed' || (e.extra && e.extra.failed);
+                const statusClass = isPassed ? 'passed' : (isFailed ? 'failed' : 'pending');
+                const icon = isPassed ? '✓' : (isFailed ? '✗' : '○');
+                const label = e.extra && e.extra.check_name ? e.extra.check_name : e.message;
+                return `
+                    <div class="dod-item ${statusClass}">
+                        <span class="dod-icon">${icon}</span>
+                        <span>${label}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadCurrentStatus() {
+            try {
+                document.getElementById('contentTitle').textContent = 'Current Status';
+                // Read CURRENT_STATUS.md file directly
+                const data = await fetchAPI('/api/progress-file?path=' + encodeURIComponent(PROJECT_PATH + '/docs/progress/CURRENT_STATUS.md'));
+                const container = document.getElementById('statusContent');
+                if (data && data.ok && data.content) {
+                    container.innerHTML = renderMarkdown(data.content);
+                } else {
+                    container.innerHTML = '<p>Status file not available</p>';
+                }
+            } catch (e) {
+                console.error('loadCurrentStatus error:', e);
+                document.getElementById('statusContent').innerHTML = '<p>Error loading status</p>';
+            }
+        }
+
+        async function loadProgressFiles() {
+            try {
+                const data = await fetchAPI('/api/progress-files?project_path=' + encodeURIComponent(PROJECT_PATH));
+                const container = document.getElementById('progressFiles');
+                if (data && data.ok && data.files && data.files.length > 0) {
+                    container.innerHTML = data.files.map(file => `
+                        <div class="progress-item" onclick="loadProgressFile('${file.path}')">
+                            <span class="progress-icon">📄</span>
+                            <span class="progress-name">${file.name}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="progress-item"><span class="progress-name">No progress files</span></div>';
+                }
+            } catch (e) {
+                console.error('loadProgressFiles error:', e);
+                document.getElementById('progressFiles').innerHTML = '<div class="progress-item"><span class="progress-name">Error loading</span></div>';
+            }
+        }
+
+        async function loadProgressFile(filePath) {
+            try {
+                const filename = filePath.split('/').pop();
+                document.getElementById('contentTitle').textContent = filename;
+                const data = await fetchAPI('/api/progress-file?path=' + encodeURIComponent(filePath));
+                const container = document.getElementById('statusContent');
+                if (data && data.ok && data.content) {
+                    container.innerHTML = renderMarkdown(data.content);
+                } else {
+                    container.innerHTML = '<p>Unable to load file</p>';
+                }
+
+                // Highlight active item
+                document.querySelectorAll('.progress-item').forEach(el => el.classList.remove('active'));
+                if (event && event.target) {
+                    const item = event.target.closest('.progress-item');
+                    if (item) item.classList.add('active');
+                }
+            } catch (e) {
+                console.error('loadProgressFile error:', e);
+            }
+        }
+
+        async function loadChangedFiles() {
+            try {
+                // Load changes from local state file
+                const data = await loadLocalJson('changes.json');
+                const container = document.getElementById('changedFiles');
+                if (data && data.changes && data.changes.length > 0) {
+                    container.innerHTML = data.changes.slice(0, 15).map(change => `
+                        <div class="file-item">
+                            <span class="file-path">${change.path}</span>
+                            <span class="file-action ${change.action}">${change.action}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="file-item"><span class="file-path">No recent changes</span></div>';
+                }
+            } catch (e) {
+                console.error('loadChangedFiles error:', e);
+                document.getElementById('changedFiles').innerHTML = '<div class="file-item"><span class="file-path">Error loading</span></div>';
+            }
+        }
+
+        async function loadLastTask() {
+            try {
+                // Load last task from local state file
+                const data = await loadLocalJson('last_task.json');
+                const container = document.getElementById('lastTask');
+                if (data && data.description) {
+                    const statusClass = data.status || 'in_progress';
+                    container.innerHTML = `
+                        <div class="task-header">
+                            <span class="task-description">${data.description || 'No active task'}</span>
+                            <span class="task-status ${statusClass}">${data.status || 'none'}</span>
+                        </div>
+                        ${data.result ? `<div class="task-description" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">${renderMarkdown(data.result)}</div>` : ''}
+                        ${data.started_at ? `<div class="task-time">Started: ${new Date(data.started_at).toLocaleString()}</div>` : ''}
+                    `;
+                } else {
+                    container.innerHTML = '<div class="task-description">No recent task</div>';
+                }
+            } catch (e) {
+                console.error('loadLastTask error:', e);
+                document.getElementById('lastTask').innerHTML = '<div class="task-description">Error loading</div>';
+            }
+        }
+
+        async function loadJobHistory() {
+            try {
+                // Job history from state.json
+                const stateData = await loadLocalJson('state.json');
+                const container = document.getElementById('jobHistory');
+                if (stateData && stateData.history && stateData.history.length > 0) {
+                    container.innerHTML = stateData.history.slice(-10).reverse().map(job => `
+                        <div class="job-history-item">
+                            <span class="job-history-id">${job.job_id || '-'}</span>
+                            <span class="job-history-type">${job.task ? job.task.substring(0, 30) : '-'}</span>
+                            <span class="job-status-badge ${job.status}">${job.status}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="job-history-item"><span class="job-history-type">No jobs yet</span></div>';
+                }
+            } catch (e) {
+                console.error('loadJobHistory error:', e);
+                document.getElementById('jobHistory').innerHTML = '<div class="job-history-item"><span class="job-history-type">Error loading</span></div>';
+            }
+        }
+
+        async function controlAction(action) {
+            // Control actions use dashboard API endpoints
+            let endpoint;
+            let body = {};
+            if (action === 'pause') {
+                endpoint = '/api/dashboard/control/pause';
+                body = { reason: 'User requested pause' };
+            } else if (action === 'resume') {
+                endpoint = '/api/dashboard/control/resume';
+                body = { reason: 'User requested resume' };
+            } else if (action === 'approve') {
+                endpoint = '/api/dashboard/control/approve';
+                body = { reason: 'User approved' };
+            } else if (action === 'reject') {
+                endpoint = '/api/dashboard/control/reject';
+                body = { reason: 'User rejected' };
+            } else {
+                console.error('Unknown control action:', action);
+                return;
+            }
+
+            const result = await postAPI(endpoint, body);
+            if (result && result.status) {
+                refreshStatus();
+            } else {
+                alert('Failed to execute action: ' + (result?.error || 'unknown error'));
+            }
+        }
+
+        async function startNewTask() {
+            const input = document.getElementById('taskInput');
+            const prompt = input.value.trim();
+
+            if (!prompt) {
+                alert('Please enter a task description');
+                return;
+            }
+
+            const autonomousCheckbox = document.getElementById('autonomousMode');
+            const autonomousMode = autonomousCheckbox ? autonomousCheckbox.checked : false;
+
+            try {
+                let result = null;
+
+                if (autonomousMode) {
+                    // Autonomous mode uses /api/runner/start
+                    result = await postAPI('/api/runner/start', {
+                        task: prompt,
+                        max_attempts: 2,
+                        enable_claude_fallback: true
+                    });
+
+                    if (!result || !result.job_id) {
+                        alert('Failed to start autonomous task');
+                        return;
+                    }
+
+                    input.value = '';
+                    currentJobId = result.job_id;
+
+                    document.getElementById('currentJobId').style.display = 'block';
+                    document.getElementById('jobIdValue').textContent = currentJobId;
+                    document.getElementById('btnCancel').style.display = 'flex';
+                    document.getElementById('activeJobCard').style.display = 'block';
+                    document.getElementById('activeJobId').textContent = currentJobId;
+                    document.getElementById('progressLog').innerHTML = '<div class="progress-entry info"><span class="progress-message">Autonomous task started...</span></div>';
+
+                    // Start polling for autonomous task
+                    startJobPolling();
+
+                    Promise.allSettled([
+                        refreshRunnerStatus(),
+                        loadJobHistory(),
+                        refreshAll()
+                    ]).catch(e => console.warn('post-start refresh error:', e));
+
+                    return;
+                }
+
+                // Regular mode uses /api/chat-start
+                result = await postAPI('/api/chat-start', {
+                    prompt: prompt,
+                    task_type: 'chat',
+                    metadata: {
+                        project_path: PROJECT_PATH
+                    }
+                });
+
+                if (!result || !result.job_id) {
+                    alert('Failed to start task');
+                    return;
+                }
+
+                input.value = '';
+                currentJobId = result.job_id;
+
+                const currentJobEl = document.getElementById('currentJobId');
+                const jobIdValueEl = document.getElementById('jobIdValue');
+                const btnCancelEl = document.getElementById('btnCancel');
+                const activeJobCardEl = document.getElementById('activeJobCard');
+                const activeJobIdEl = document.getElementById('activeJobId');
+                const progressLogEl = document.getElementById('progressLog');
+
+                if (currentJobEl) currentJobEl.style.display = 'block';
+                if (jobIdValueEl) jobIdValueEl.textContent = currentJobId;
+                if (btnCancelEl) btnCancelEl.style.display = 'flex';
+                if (activeJobCardEl) activeJobCardEl.style.display = 'block';
+                if (activeJobIdEl) activeJobIdEl.textContent = currentJobId;
+                if (progressLogEl) {
+                    progressLogEl.innerHTML = '<div class="progress-entry info"><span class="progress-message">Task accepted. Waiting for progress...</span></div>';
+                }
+
+                startJobPolling();
+
+                Promise.allSettled([
+                    loadJobStatus(currentJobId),
+                    refreshQueueStatus(),
+                    loadJobHistory(),
+                    refreshAll()
+                ]).then(results => {
+                    results.forEach((r, idx) => {
+                        if (r.status === 'rejected') {
+                            console.warn('post-start refresh failed', idx, r.reason);
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error('startNewTask failed', e);
+                alert('Failed to start task: ' + (
+                    e?.message ||
+                    e?.error ||
+                    JSON.stringify(e, null, 2) ||
+                    'unknown error'
+                ));
+            }
+        }
+
+        async function cancelCurrentJob() {
+            if (!currentJobId) return;
+            // Cancel not available in main backend, just stop polling
+            stopJobPolling();
+            currentJobId = null;
+            document.getElementById('currentJobId').style.display = 'none';
+            document.getElementById('btnCancel').style.display = 'none';
+            document.getElementById('activeJobCard').style.display = 'none';
+            refreshQueueStatus();
+            loadJobHistory();
+        }
+
+        async function refreshAll() {
+            // Use Promise.allSettled to prevent one failure from blocking all
+            const results = await Promise.allSettled([
+                refreshStatus(),
+                refreshQueueStatus(),
+                refreshLoopStatus(),
+                refreshSupervisorStatus(),
+                refreshOrchestratorStatus(),
+                refreshRunnerStatus(),
+                loadCurrentStatus(),
+                loadProgressFiles(),
+                loadChangedFiles(),
+                loadLastTask(),
+                loadJobHistory()
+            ]);
+
+            // Log any errors for debugging
+            results.forEach((result, idx) => {
+                if (result.status === 'rejected') {
+                    console.warn('refreshAll item', idx, 'failed:', result.reason);
+                }
+            });
+
+            // If there's an active job, load its status
+            if (currentJobId) {
+                loadJobStatus(currentJobId).catch(e => console.warn('loadJobStatus failed:', e));
+            }
+        }
+
+        function startDashboardAutoRefresh() {
+            if (dashboardRefreshInterval) return;
+            dashboardRefreshInterval = setInterval(() => {
+                refreshStatus();
+                refreshQueueStatus();
+                refreshLoopStatus();
+                refreshSupervisorStatus();
+                refreshOrchestratorStatus();
+                refreshRunnerStatus();
+                loadChangedFiles();
+                loadLastTask();
+                if (window.refreshManagerState) window.refreshManagerState();
+                if (currentJobId) {
+                    loadJobStatus(currentJobId);
+                }
+            }, 2000);
+        }
+
+        function stopDashboardAutoRefresh() {
+            if (!dashboardRefreshInterval) return;
+            clearInterval(dashboardRefreshInterval);
+            dashboardRefreshInterval = null;
+        }
+
+        // Initial load
+        async function init() {
+            // Setup autonomous mode toggle info
+            const autonomousCheckbox = document.getElementById('autonomousMode');
+            const modeInfo = document.getElementById('modeInfo');
+            autonomousCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    modeInfo.textContent = '🚀 Autonomous mode: Task will run to completion without pauses';
+                } else {
+                    modeInfo.textContent = '⏸️ Manual mode: Task will pause for confirmations';
+                }
+            });
+
+            // Restore active job from backend state
+            await restoreActiveJob();
+
+            // Initial data load - use Promise.allSettled to prevent one failure from breaking everything
+            await refreshAll();
+            startDashboardAutoRefresh();
+        }
+
+        // Restore active job from backend state on page load
+        async function restoreActiveJob() {
+            try {
+                // Single source of truth: /api/active-job from jobs router
+                // This endpoint checks job_queue state and returns only truly active jobs
+                let data = await fetchAPI('/api/active-job');
+
+                // No fallback needed - /api/active-job already checks state.json
+                // which is the single source of truth for active job info
+
+                if (data && data.active && data.job && data.job.job_id) {
+                    currentJobId = data.job.job_id;
+
+                    // Show active job UI
+                    document.getElementById('currentJobId').style.display = 'block';
+                    document.getElementById('jobIdValue').textContent = currentJobId;
+                    document.getElementById('activeJobCard').style.display = 'block';
+                    document.getElementById('activeJobId').textContent = currentJobId;
+                    document.getElementById('btnCancel').style.display = 'flex';
+
+                    // Update task status
+                    const taskText = data.job.task || data.job.prompt || '';
+                    if (taskText) {
+                        document.getElementById('taskStatus').textContent = taskText.substring(0, 50) + '...';
+                    }
+
+                    // Update job status badge
+                    const badge = document.getElementById('jobStatusBadge');
+                    badge.textContent = data.job.status || 'running';
+                    badge.className = 'job-status-badge ' + (data.job.status || 'started');
+
+                    // Display progress events if available
+                    if (data.job.progress && data.job.progress.length > 0) {
+                        const progressLog = document.getElementById('progressLog');
+                        progressLog.innerHTML = data.job.progress.map(e => {
+                            const stage = e.stage || e.event_type || e.current_stage || 'info';
+                            return `
+                                <div class="progress-entry ${e.level || 'info'}">
+                                    <span class="progress-time">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                                    <span class="progress-stage">[${stage}]</span>
+                                    <span class="progress-message">${e.message}</span>
+                                </div>
+                            `;
+                        }).join('');
+                        progressLog.scrollTop = progressLog.scrollHeight;
+                    }
+
+                    // Start polling for updates if still active
+                    const status = data.job.status;
+                    if (status === 'running' || status === 'started' || status === 'planning' ||
+                        status === 'step_executing' || status === 'step_reviewing' || status === 'in_progress' ||
+                        status === 'queued') {
+                        startJobPolling();
+                    }
+
+                    console.log('Active job restored:', currentJobId);
+                }
+            } catch (e) {
+                console.error('Failed to restore active job:', e);
+            }
+        }
+
+        // Refresh runner status from /api/runner/status
+        async function refreshRunnerStatus() {
+            try {
+                const data = await fetchAPI('/api/runner/status');
+                if (!data || !data.ok) return;
+
+                const badge = document.getElementById('runnerBadge');
+                badge.textContent = data.is_running ? 'running' : 'idle';
+                badge.className = 'job-status-badge ' + (data.is_running ? 'started' : 'queued');
+
+                document.getElementById('runnerMode').textContent = data.mode || 'self_first';
+                document.getElementById('runnerStatus').textContent = data.status || 'idle';
+                document.getElementById('runnerStep').textContent = data.current_step || '-';
+                document.getElementById('runnerTask').textContent = data.current_task ? data.current_task.substring(0, 50) : '-';
+                document.getElementById('runnerProgress').textContent = `${data.steps_completed?.length || 0}/${data.steps_total || 0}`;
+                document.getElementById('runnerAttempts').textContent = data.total_attempts || 0;
+
+                // Claude fallback info
+                const claudeInfo = document.getElementById('runnerClaudeInfo');
+                if (data.claude_invoked) {
+                    claudeInfo.style.display = 'block';
+                    document.getElementById('runnerClaudeReason').textContent = data.claude_reason || '';
+                } else {
+                    claudeInfo.style.display = 'none';
+                }
+
+                // Recent events
+                const eventsEl = document.getElementById('runnerEvents');
+                if (data.recent_events && data.recent_events.length > 0) {
+                    eventsEl.innerHTML = data.recent_events.slice(-10).map(e => {
+                        const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '';
+                        return `<div style="padding: 2px 0;"><span style="color: var(--text-secondary);">${time}</span> [${e.stage || e.event_type || 'info'}] ${e.message || ''}</div>`;
+                    }).join('');
+                }
+            } catch (e) {
+                console.warn('refreshRunnerStatus error:', e);
+            }
+        }
+
+        // Display plan progress in DoD status area (NEW)
+        function displayPlanProgress(plan, currentStepIndex) {
+            const dodStatus = document.getElementById('dodStatus');
+            const dodItems = document.getElementById('dodItems');
+
+            if (!plan || !plan.steps || plan.steps.length === 0) {
+                dodStatus.style.display = 'none';
+                return;
+            }
+
+            dodStatus.style.display = 'block';
+            document.querySelector('#dodStatus .dod-title').textContent = `Execution Plan (${plan.steps.length} steps)`;
+
+            dodItems.innerHTML = plan.steps.map((step, idx) => {
+                let statusClass = 'pending';
+                let icon = '○';
+
+                if (step.status === 'completed') {
+                    statusClass = 'passed';
+                    icon = '✓';
+                } else if (step.status === 'failed') {
+                    statusClass = 'failed';
+                    icon = '✗';
+                } else if (step.status === 'in_progress' || idx === currentStepIndex) {
+                    statusClass = 'pending';
+                    icon = '▶';
+                }
+
+                const modeLabel = step.mode === 'claude' ? ' [Claude]' : '';
+                const attemptLabel = step.attempts > 0 ? ` (${step.attempts}x)` : '';
+
+                return `
+                    <div class="dod-item ${statusClass}">
+                        <span class="dod-icon">${icon}</span>
+                        <span>Step ${idx + 1}: ${step.description.substring(0, 40)}${step.description.length > 40 ? '...' : ''}${modeLabel}${attemptLabel}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.startDashboardAutoRefresh = startDashboardAutoRefresh;
+        window.stopDashboardAutoRefresh = stopDashboardAutoRefresh;
+
+        // ── Manager Loop UI ─────────────────────────────────────────────────
+
+        const LIFECYCLE_LABELS = {
+            idle:            { icon: '💤', text: 'Idle',             color: 'var(--text-secondary)' },
+            selecting:       { icon: '🔍', text: 'Selecting task',   color: 'var(--accent-blue)' },
+            planning:        { icon: '📋', text: 'Planning step',    color: 'var(--accent-blue)' },
+            executing:       { icon: '⚡', text: 'Worker executing', color: 'var(--accent-green)' },
+            reviewing:       { icon: '🔎', text: 'Manager reviewing',color: 'var(--accent-blue)' },
+            accepted:        { icon: '✅', text: 'Accepted',         color: 'var(--accent-green)' },
+            retry_required:  { icon: '🔄', text: 'Retry required',   color: 'var(--accent-orange)' },
+            blocked:         { icon: '⛔', text: 'Blocked',          color: 'var(--accent-red)' },
+        };
+
+        async function refreshManagerLoop() {
+            try {
+                const data = await fetchAPI('/api/manager/state');
+                if (!data) return;
+                const body = document.getElementById('managerLoopBody');
+                if (!body) return;
+
+                const lc = LIFECYCLE_LABELS[data.status] || { icon: '?', text: data.status, color: 'var(--text-secondary)' };
+                const verdict = data.review ? data.review.verdict : null;
+                const reviewColor = verdict === 'accepted' ? 'var(--accent-green)'
+                                  : verdict === 'blocked'  ? 'var(--accent-red)'
+                                  : verdict === 'retry_required' ? 'var(--accent-orange)'
+                                  : 'var(--text-secondary)';
+
+                let issuesHtml = '';
+                if (data.review && data.review.issues && data.review.issues.length) {
+                    issuesHtml = `<div style="margin-top:6px;padding:6px 10px;background:rgba(244,67,54,0.1);border-left:3px solid var(--accent-red);border-radius:4px;font-size:11px;">
+                        ${data.review.issues.map(i => `<div>⚠ ${i}</div>`).join('')}
+                    </div>`;
+                }
+                let checksHtml = '';
+                if (data.review && data.review.checks && data.review.checks.length) {
+                    checksHtml = `<div style="margin-top:6px;font-size:11px;color:var(--text-secondary);">
+                        ${data.review.checks.map(c => `<span style="margin-right:10px;">• ${c}</span>`).join('')}
+                    </div>`;
+                }
+                let filesHtml = '';
+                const _workerFiles = ((data.worker_result || {}).files_changed || []);
+                if (_workerFiles.length) {
+                    filesHtml = `<div style="margin-top:8px;font-size:11px;">
+                        <strong>Files changed:</strong> ${_workerFiles.join(', ')}
+                    </div>`;
+                }
+                let historyHtml = '';
+                if (data.history && data.history.length) {
+                    historyHtml = `<div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:8px;font-size:11px;">
+                        <div style="color:var(--text-secondary);margin-bottom:4px;">Recent history</div>
+                        ${data.history.slice().reverse().map(h => {
+                            const hc = h.verdict === 'accepted' ? 'var(--accent-green)'
+                                     : h.verdict === 'blocked' ? 'var(--accent-red)'
+                                     : 'var(--accent-orange)';
+                            return `<div style="margin-bottom:3px;">
+                                <span style="color:${hc};">${h.verdict === 'accepted' ? '✅' : h.verdict === 'blocked' ? '⛔' : '🔄'}</span>
+                                <strong>${h.task_id}</strong> — ${(h.task_title||'').substring(0,50)}
+                                ${h.files_changed && h.files_changed.length ? `<span style="color:var(--text-secondary);"> [${h.files_changed.join(', ')}]</span>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>`;
+                }
+
+                body.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                        <span style="font-size:22px;">${lc.icon}</span>
+                        <div>
+                            <div style="font-weight:600;color:${lc.color};">${lc.text}</div>
+                            ${(data.current_task || {}).id ? `<div style="font-size:11px;color:var(--text-secondary);">Task ${ (data.current_task).id}: ${((data.current_task).title||'').substring(0,60)}</div>` : '<div style="font-size:11px;color:var(--text-secondary);">No task selected</div>'}
+                        </div>
+                        ${data.retry_count > 0 ? `<span style="margin-left:auto;font-size:11px;color:var(--accent-orange);">Retry ${data.retry_count}/${data.max_retries}</span>` : ''}
+                    </div>
+                    ${data.current_step_preview ? `<div style="font-size:11px;color:var(--text-secondary);padding:6px 8px;background:var(--bg-secondary);border-radius:4px;margin-bottom:6px;">${data.current_step_preview}</div>` : ''}
+                    ${verdict ? `<div style="font-size:12px;font-weight:600;color:${reviewColor};">Review: ${verdict} — ${(data.review.notes||'').substring(0,100)}</div>` : ''}
+                    ${checksHtml}
+                    ${issuesHtml}
+                    ${filesHtml}
+                    <div style="margin-top:8px;font-size:11px;color:var(--text-secondary);">
+                        ✅ Accepted: ${(data.accepted_tasks||[]).length}  ⛔ Blocked: ${(data.blocked_tasks||[]).length}
+                        ${data.updated_at ? `  · Updated: ${new Date(data.updated_at).toLocaleTimeString()}` : ''}
+                    </div>
+                    ${historyHtml}
+                `;
+            } catch (e) {
+                console.warn('refreshManagerLoop error:', e);
+            }
+        }
+
+        async function runManagerCycle() {
+            try {
+                const result = await postAPI('/api/manager/run-cycle', {});
+                if (result && result.started) {
+                    setTimeout(refreshManagerLoop, 800);
+                    setTimeout(refreshManagerLoop, 2500);
+                    setTimeout(refreshManagerLoop, 5000);
+                } else {
+                    alert(result ? result.message : 'Failed to start cycle');
+                }
+            } catch (e) {
+                alert('Error starting manager cycle: ' + e.message);
+            }
+        }
+
+        async function runManagerAuto() {
+            try {
+                const result = await postAPI('/api/manager/run-auto?max_cycles=50', {});
+                if (result && result.started) {
+                    // Poll frequently while auto-run is active
+                    let polls = 0;
+                    const interval = setInterval(async () => {
+                        await refreshManagerLoop();
+                        polls++;
+                        // Check if any tasks remain
+                        const state = await fetchAPI('/api/manager/state');
+                        const noTasks = state && state.status === 'idle' && !state.current_task;
+                        if (noTasks || polls > 120) clearInterval(interval);
+                    }, 3000);
+                } else {
+                    alert(result ? result.message : 'Failed to start auto-run');
+                }
+            } catch (e) {
+                alert('Error starting auto-run: ' + e.message);
+            }
+        }
+
+        async function resetManager() {
+            try {
+                await postAPI('/api/manager/reset', {});
+                refreshManagerLoop();
+            } catch (e) {
+                alert('Error resetting manager: ' + e.message);
+            }
+        }
+
+        init();
+    </script>
+
+<script>
+/* ── CANONICAL MANAGER LOOP FUNCTIONS ─────────────────────────────────────
+ * Single authoritative script block for all manager UI actions.
+ * Reads from /api/manager/human-status (operator observer layer).
+ * Falls back to raw /api/manager/state if human-status is unavailable.
+ * -------------------------------------------------------------------------*/
+(function() {
+    function esc(v) {
+        return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    const REFRESH_STALE_MS = 10000;
+    let managerLastSuccessMs = null;
+    let managerPollInFlight = false;
+    let sprintRunning = false;
+
+    const STATUS_META = {
+        idle:           { color: 'var(--text-secondary)', icon: '○', label: 'Idle' },
+        selecting:      { color: 'var(--accent-blue)',    icon: '⟳', label: 'Selecting' },
+        planning:       { color: 'var(--accent-blue)',    icon: '⟳', label: 'Planning' },
+        executing:      { color: 'var(--accent-green)',   icon: '▶', label: 'Executing' },
+        reviewing:      { color: 'var(--accent-blue)',    icon: '🔎', label: 'Reviewing' },
+        accepted:       { color: 'var(--accent-green)',   icon: '✓', label: 'Accepted' },
+        retry_required: { color: 'var(--accent-orange)',  icon: '↺', label: 'Retry Required' },
+        blocked:        { color: 'var(--accent-red)',     icon: '✕', label: 'Blocked' },
+        error:          { color: 'var(--accent-red)',     icon: '!', label: 'Error' },
+    };
+
+    function formatElapsed(sec) {
+        if (sec == null || Number.isNaN(Number(sec))) return '—';
+        const total = Math.max(0, Number(sec));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        if (h > 0) return `${h}h ${m}m ${s}s`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+    }
+
+    function setRefreshIndicator(state) {
+        const el = document.getElementById('mgrRefreshIndicator');
+        if (!el) return;
+        if (state === 'live') {
+            el.className = 'mgr-refresh-indicator live';
+            el.textContent = 'Live';
+            return;
+        }
+        if (state === 'offline') {
+            el.className = 'mgr-refresh-indicator offline';
+            el.textContent = 'Offline';
+            return;
+        }
+        el.className = 'mgr-refresh-indicator updating';
+        el.textContent = 'Updating...';
+    }
+
+    function updateLastUpdatedLabel() {
+        const el = document.getElementById('mgrLastUpdated');
+        if (!el) return;
+        if (!managerLastSuccessMs) {
+            el.textContent = 'Last updated: --';
+            el.classList.remove('warning');
+            return;
+        }
+        const ageMs = Date.now() - managerLastSuccessMs;
+        const sec = Math.floor(ageMs / 1000);
+        const ts = new Date(managerLastSuccessMs).toLocaleTimeString();
+        el.textContent = `Last updated: ${ts} (${sec}s ago)`;
+        if (ageMs > REFRESH_STALE_MS) {
+            el.classList.add('warning');
+            if (!managerPollInFlight) setRefreshIndicator('offline');
+        } else {
+            el.classList.remove('warning');
+        }
+    }
+
+    function setPollError(visible, text = 'Не удалось обновить статус') {
+        const el = document.getElementById('mgrPollError');
+        if (!el) return;
+        el.style.display = visible ? 'block' : 'none';
+        el.textContent = text;
+    }
+
+    function updateSprintButton() {
+        const btn = document.getElementById('btnRunSprint');
+        if (!btn) return;
+        btn.disabled = sprintRunning;
+        btn.textContent = sprintRunning ? 'Sprint running...' : '🏁 Run Sprint';
+    }
+
+    function statusBadge(status) {
+        const m = STATUS_META[status] || { color: 'var(--text-secondary)', icon: '?', label: status };
+        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:${m.color}22;color:${m.color};font-weight:700;font-size:12px;border:1px solid ${m.color}55;">
+            <span>${m.icon}</span><span>${esc(m.label)}</span>
+        </span>`;
+    }
+
+    function safetyBadge(safe, reason) {
+        if (safe) {
+            return `<span style="color:var(--accent-green);font-weight:600;">✓ Safe to Auto-Run</span>`;
+        }
+        return `<span style="color:var(--accent-orange);font-weight:600;" title="${esc(reason || '')}">⚠ Auto-Run Paused${reason ? ' — ' + esc(reason.substring(0,60)) : ''}</span>`;
+    }
+
+    function renderHumanStatus(d) {
+        const panel = document.getElementById('managerLoopBody');
+        if (!panel) return;
+
+        // Update mode badge in card header
+        const modeBadge = document.getElementById('mgrModeBadge');
+        if (modeBadge && d.mode) {
+            modeBadge.textContent = d.mode === 'mvp_recovery' ? 'MVP Recovery' : 'Normal';
+            modeBadge.style.background = d.mode === 'mvp_recovery' ? 'var(--accent-red)33' : 'var(--bg-secondary)';
+            modeBadge.style.color = d.mode === 'mvp_recovery' ? 'var(--accent-red)' : 'var(--text-secondary)';
+        }
+
+        const changedFiles = d.changed_files || [];
+        const verifiedUnchanged = d.last_verified_unchanged || [];
+        const filesHtml = changedFiles.length
+            ? changedFiles.map(f => `<code style="display:inline-block;background:var(--bg-secondary);padding:1px 6px;border-radius:4px;font-size:11px;margin:1px 2px;">${esc(f)}</code>`).join('')
+            : '<span style="opacity:.5;">—</span>';
+
+        const verifiedHtml = verifiedUnchanged.length
+            ? `<div style="margin-top:4px;font-size:11px;color:var(--accent-green);">✓ verified unchanged: ${verifiedUnchanged.map(f=>`<code>${esc(f)}</code>`).join(', ')}</div>`
+            : '';
+
+        const executorHtml = (d.last_executor && d.last_executor !== '—')
+            ? `<span style="font-size:11px;opacity:.65;margin-left:8px;">via <code>${esc(d.last_executor)}</code></span>`
+            : '';
+
+        const nextTaskHtml = (d.next_task_id)
+            ? `<div style="margin-top:10px;padding:6px 10px;background:var(--bg-secondary);border-radius:6px;font-size:11px;">
+                <span style="opacity:.6;">NEXT:</span>
+                <strong>${esc(d.next_task_id)}</strong> — ${esc((d.next_task_title || '').substring(0, 70))}
+               </div>`
+            : '';
+
+        // SP-7: sprint progress bar
+        const sprintHtml = d.sprint_id ? (() => {
+            const elap = d.sprint_elapsed_sec != null ? d.sprint_elapsed_sec : 0;
+            const min = Math.floor(elap / 60), sec = elap % 60;
+            const elapsed = `${min}m${String(sec).padStart(2,'0')}s`;
+            return `<div style="margin-top:10px;padding:6px 10px;background:var(--bg-secondary);border-radius:6px;font-size:11px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                <span style="opacity:.5;font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Sprint</span>
+                <code style="font-size:10px;opacity:.7;">${esc(d.sprint_id)}</code>
+                <span>⏱ ${esc(elapsed)}</span>
+                <span style="color:var(--accent-green);">✓ ${esc(d.sprint_accepted ?? 0)}</span>
+                <span style="color:var(--accent-red);">✕ ${esc(d.sprint_blocked ?? 0)}</span>
+            </div>`;
+        })() : '';
+
+        const problemHtml = d.problem
+            ? `<div style="background:#ff444422;border-left:3px solid var(--accent-red);padding:8px 12px;border-radius:4px;margin-top:8px;white-space:pre-wrap;font-size:12px;">${esc(d.problem)}</div>`
+            : '';
+
+        const nextActionHtml = d.next_action
+            ? `<div style="white-space:pre-wrap;">${esc(d.next_action)}</div>`
+            : '';
+
+        const cmdHtml = d.check_command
+            ? `<pre style="background:var(--bg-secondary);padding:8px 12px;border-radius:6px;font-size:11px;overflow-x:auto;margin-top:4px;">${esc(d.check_command)}</pre>`
+            : '';
+
+        const expectedHtml = d.expected_result
+            ? `<div style="font-size:12px;opacity:.8;">${esc(d.expected_result)}</div>`
+            : '';
+
+        const retryHtml = (d.retry_count != null && d.max_retries)
+            ? `<span style="font-size:11px;opacity:.7;">Retry: ${esc(d.retry_count)}/${esc(d.max_retries)}</span>`
+            : '';
+
+        const countsHtml = `
+            <span style="color:var(--accent-green);font-size:11px;">✓ ${esc(d.accepted_count ?? 0)} accepted</span>
+            &nbsp;
+            <span style="color:var(--accent-red);font-size:11px;">✕ ${esc(d.blocked_count ?? 0)} blocked</span>
+        `;
+
+        const sprintAccepted = Number.isFinite(Number(d.sprint_accepted)) ? Number(d.sprint_accepted) : Number(d.accepted_count || 0);
+        const sprintBlocked = Number.isFinite(Number(d.sprint_blocked)) ? Number(d.sprint_blocked) : Number(d.blocked_count || 0);
+        const sprintMaxAccepted = Number.isFinite(Number(d.sprint_max_accepted)) ? Number(d.sprint_max_accepted) : null;
+        const progressPct = sprintMaxAccepted && sprintMaxAccepted > 0
+            ? Math.min(100, Math.round((sprintAccepted / sprintMaxAccepted) * 100))
+            : null;
+        const actionText = (d.status === 'executing' && d.task_id && d.task_title)
+            ? `Сейчас выполняется: ${d.task_id} — ${d.task_title}`
+            : (d.summary || '—');
+
+        panel.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                ${statusBadge(d.status)}
+                ${retryHtml}
+                ${countsHtml}
+                ${executorHtml}
+                ${safetyBadge(d.safe_to_auto_run, d.reason_not_safe)}
+            </div>
+
+            <div style="margin-bottom:10px;padding:8px 10px;background:var(--bg-secondary);border-radius:6px;">
+                <div style="opacity:.65;font-size:11px;margin-bottom:4px;">CURRENT ACTION</div>
+                <div style="line-height:1.5;">${esc(actionText)}</div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <div style="opacity:.65;font-size:11px;margin-bottom:2px;">CURRENT TASK</div>
+                <div style="font-weight:700;font-size:14px;">${d.task_id ? esc(d.task_id) + ' — ' + esc(d.task_title || '') : '<span style="opacity:.5;">—</span>'}</div>
+                ${d.phase ? `<div style="font-size:11px;opacity:.6;margin-top:1px;">${esc(d.phase)}</div>` : ''}
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+                <div style="padding:10px;background:var(--bg-secondary);border-radius:8px;">
+                    <div style="opacity:.65;font-size:11px;margin-bottom:6px;">SPRINT PROGRESS</div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;">
+                        <span>Sprint ID: <strong>${esc(d.sprint_id || '—')}</strong></span>
+                        <span>Elapsed: <strong>${esc(formatElapsed(d.sprint_elapsed_sec))}</strong></span>
+                        <span>Accepted: <strong>${esc(sprintAccepted)}</strong></span>
+                        <span>Blocked: <strong>${esc(sprintBlocked)}</strong></span>
+                        <span>Retry count: <strong>${esc(d.retry_count ?? 0)}</strong></span>
+                    </div>
+                    ${progressPct != null ? `
+                        <div style="margin-top:8px;">
+                            <div style="height:8px;background:var(--bg-primary);border-radius:999px;overflow:hidden;">
+                                <div style="height:100%;width:${progressPct}%;background:var(--accent-blue);"></div>
+                            </div>
+                            <div style="margin-top:4px;font-size:11px;color:var(--text-secondary);">${esc(sprintAccepted)} / ${esc(sprintMaxAccepted)} (${esc(progressPct)}%)</div>
+                        </div>
+                    ` : `<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);">Max accepted is not available.</div>`}
+                </div>
+                <div style="padding:10px;background:var(--bg-secondary);border-radius:8px;">
+                    <div style="opacity:.65;font-size:11px;margin-bottom:6px;">RECENT RESULT</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
+                        <div>Executor: <strong>${esc(d.last_executor || '—')}</strong></div>
+                        <div>Verdict: <strong>${esc(d.last_verdict || '—')}</strong></div>
+                        <div>Files changed: <strong>${esc(changedFiles.length)}</strong></div>
+                        <div>Verified unchanged: <strong>${esc(verifiedUnchanged.length)}</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <div style="opacity:.65;font-size:11px;margin-bottom:4px;">SUMMARY</div>
+                <div style="line-height:1.5;">${esc(d.summary || '—')}</div>
+                ${problemHtml}
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <div style="opacity:.65;font-size:11px;margin-bottom:4px;">FILES CHANGED</div>
+                <div>${filesHtml}</div>
+                ${verifiedHtml}
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+                <div>
+                    <div style="opacity:.65;font-size:11px;margin-bottom:4px;">NEXT ACTION</div>
+                    ${nextActionHtml}
+                </div>
+                <div>
+                    <div style="opacity:.65;font-size:11px;margin-bottom:4px;">VERIFY WITH</div>
+                    ${cmdHtml}
+                    ${expectedHtml}
+                </div>
+            </div>
+
+            <div style="font-size:10px;opacity:.4;text-align:right;">
+                Source: /api/manager/human-status · operator observation layer
+            </div>
+            ${nextTaskHtml}
+            ${sprintHtml}
+        `;
+    }
+
+    function renderRawStateFallback(raw, reason) {
+        const panel = document.getElementById('managerLoopBody');
+        if (!panel) return;
+        panel.innerHTML = `
+            <div style="font-size:12px;color:var(--accent-orange);margin-bottom:8px;">
+                human-status unavailable (${esc(reason || 'unknown')}); showing raw state
+            </div>
+            <pre style="font-size:11px;overflow:auto;max-height:260px;background:var(--bg-secondary);padding:10px;border-radius:8px;">${esc(JSON.stringify(raw || {}, null, 2))}</pre>
+        `;
+    }
+
+    // ── Fetch helpers ──────────────────────────────────────────────────────
+    async function _mgr_get(url, timeoutMs = 1800) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const resp = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+    }
+
+    async function _mgr_post(url, timeoutMs = 10000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+            signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+    }
+
+    // ── Refresh: prefers human-status, falls back to raw state ─────────────
+    async function _refreshManagerState() {
+        if (managerPollInFlight) {
+            updateLastUpdatedLabel();
+            return null;
+        }
+        managerPollInFlight = true;
+        setRefreshIndicator('updating');
+        try {
+            const data = await _mgr_get('/api/manager/human-status');
+            if (!data || typeof data !== 'object') throw new Error('unexpected response');
+            sprintRunning = !!data.sprint_running;
+            updateSprintButton();
+            renderHumanStatus(data);
+            managerLastSuccessMs = Date.now();
+            setPollError(false);
+            setRefreshIndicator('live');
+            updateLastUpdatedLabel();
+            return data;
+        } catch (humanErr) {
+            try {
+                const raw = await _mgr_get('/api/manager/state');
+                renderRawStateFallback(raw, humanErr.message);
+                sprintRunning = !!raw.sprint_running;
+                updateSprintButton();
+                managerLastSuccessMs = Date.now();
+                setPollError(true, 'Не удалось обновить статус');
+                setRefreshIndicator('live');
+                updateLastUpdatedLabel();
+                return raw;
+            } catch (rawErr) {
+                setRefreshIndicator('offline');
+                setPollError(true, 'Не удалось обновить статус');
+                updateLastUpdatedLabel();
+                const panel = document.getElementById('managerLoopBody');
+                if (panel) panel.innerHTML = `<div style="color:var(--accent-red);">Failed to load manager status</div>`;
+                return null;
+            }
+        } finally {
+            managerPollInFlight = false;
+        }
+    }
+
+    async function _runManagerCycle() {
+        try {
+            const result = await _mgr_post('/api/manager/run-cycle');
+            if (result) {
+                setTimeout(_refreshManagerState, 800);
+                setTimeout(_refreshManagerState, 3000);
+                setTimeout(_refreshManagerState, 6000);
+                return;
+            }
+            alert('Manager cycle returned empty response');
+        } catch (e) {
+            alert('Failed to start manager cycle: ' + (e?.message || 'network error'));
+        }
+    }
+
+    async function _runManagerAuto() {
+        try {
+            const result = await _mgr_post('/api/manager/run-auto?max_cycles=50');
+            if (result) {
+                await _refreshManagerState();
+                let ticks = 0;
+                const timer = setInterval(async () => {
+                    ticks += 1;
+                    const s = await _refreshManagerState();
+                    const status = s?.status || '';
+                    if (ticks >= 60 || status === 'idle' || status === 'blocked') {
+                        clearInterval(timer);
+                    }
+                }, 2000);
+                return;
+            }
+            alert('Auto-run returned empty response');
+        } catch (e) {
+            alert('Failed to start auto-run: ' + (e?.message || 'network error'));
+        }
+    }
+
+    async function _runManagerSprint() {
+        try {
+            const result = await _mgr_post('/api/manager/run-sprint');
+            if (result && result.status === 'started') {
+                sprintRunning = true;
+                updateSprintButton();
+                await _refreshManagerState();
+                return;
+            }
+            alert('Sprint start returned empty response');
+        } catch (e) {
+            alert('Failed to start sprint: ' + (e?.message || 'network error'));
+        }
+    }
+
+    async function _resetManagerLoop() {
+        try {
+            const result = await _mgr_post('/api/manager/reset');
+            if (result) { await _refreshManagerState(); return; }
+            alert('Reset returned empty response');
+        } catch (e) {
+            alert('Failed to reset manager loop: ' + (e?.message || 'network error'));
+        }
+    }
+
+    // ── Bind to window ─────────────────────────────────────────────────────
+    window.refreshManagerState = _refreshManagerState;
+    window.runManagerCycle     = _runManagerCycle;
+    window.runManagerAuto      = _runManagerAuto;
+    window.runManagerSprint    = _runManagerSprint;
+    window.resetManager        = _resetManagerLoop;
+    window.resetManagerLoop    = _resetManagerLoop;
+
+    window.addEventListener('load', function() {
+        updateSprintButton();
+        setTimeout(_refreshManagerState, 700);
+    });
+})();
+</script>
+
+</body>
+</html>
