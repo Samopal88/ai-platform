@@ -1,0 +1,23 @@
+[Unit]
+Description=SearxNG (Docker)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+Restart=always
+RestartSec=3
+TimeoutStartSec=0
+
+# Ensure stale container doesn't block start
+ExecStartPre=-/usr/bin/docker rm -f searxng
+
+# Run SearxNG on localhost:8080 for backend access
+ExecStart=/usr/bin/docker run --name searxng --rm -p 8080:8080 -e BASE_URL=http://127.0.0.1:8080 searxng/searxng:latest
+ExecStop=/usr/bin/docker stop -t 10 searxng
+
+[Install]
+WantedBy=multi-user.target
