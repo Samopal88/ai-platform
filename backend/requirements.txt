@@ -1,0 +1,34 @@
+# AI Workspace Platform - Backend Dependencies
+
+# FastAPI and ASGI server
+fastapi==0.141.1
+uvicorn[standard]==0.30.6
+
+# Settings management
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# Database (SQLAlchemy ORM + SQLite async driver + migrations)
+sqlalchemy==2.0.35
+alembic==1.13.3
+aiosqlite==0.20.0
+psycopg[binary]==3.2.3
+redis==5.1.1
+
+# HTTP clients and integrations
+requests==2.34.2
+httpx==0.27.2
+
+# AI providers
+anthropic==0.39.0
+
+# File uploads and parsing
+python-multipart==0.0.32
+python-docx==1.1.2
+python-pptx==1.0.2
+reportlab==4.2.5
+pdfplumber==0.11.10
+pypdf==6.19.0
+
+# Development tools
+python-dotenv==1.2.3
